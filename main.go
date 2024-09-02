@@ -5,6 +5,7 @@ import (
   "fmt"
   "encoding/json"
   "net"
+  "io"
 )
 
 type IPRes struct {
@@ -13,7 +14,15 @@ type IPRes struct {
   Forward string
 }
 
-func ip(w http.ResponseWriter, r *http.Request){
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request){
+  // A simple healthcheck handler
+  w.WriteHeader(http.StatusOK)
+  w.Header().Set("Content-Type", "application/json")
+
+  io.WriteString(w, `{"alive": true}`)
+}
+
+func GetPubIPHandler(w http.ResponseWriter, r *http.Request){
   // Split address into ip and port
   ip, port, err := net.SplitHostPort(r.RemoteAddr)
 
@@ -42,7 +51,8 @@ func ip(w http.ResponseWriter, r *http.Request){
 }
 
 func main() {
-  http.HandleFunc("/ip", ip)
+  http.HandleFunc("/ip", GetPubIPHandler)
+  http.HandleFunc("/healthz", HealthCheckHandler)
 
   fmt.Println("Server Running...")
   http.ListenAndServe(":9090", nil)
