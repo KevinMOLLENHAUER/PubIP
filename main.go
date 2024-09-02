@@ -27,13 +27,19 @@ func GetPubIPHandler(w http.ResponseWriter, r *http.Request){
   ip, port, err := net.SplitHostPort(r.RemoteAddr)
 
   if err != nil {
+    http.Error(w, "Can't get address.", http.StatusBadRequest)
     fmt.Println("Error during address splitting", err.Error())
+    fmt.Println("RemoteAddr is: ", r.RemoteAddr)
+    return
   }
   // Parse IP
   userIP := net.ParseIP(ip)
   // need to check if userIP is nill
   if userIP == nil {
+    http.Error(w, "Unsupported address format.", http.StatusBadRequest)
     fmt.Println("Wrong address format")
+    fmt.Println("IP is: ", ip)
+    return
   }
 
   // Check if request was forwarded
