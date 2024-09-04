@@ -2,10 +2,11 @@ package main
 
 import (
   "net/http"
-  "fmt"
   "encoding/json"
   "net"
   "io"
+  "os"
+  "log/slog"
 )
 
 type IPRes struct {
@@ -16,6 +17,9 @@ type IPRes struct {
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request){
   // A simple healthcheck handler
+
+  slog.Info("Receive call on healthcheck handler")
+
   w.WriteHeader(http.StatusOK)
   w.Header().Set("Content-Type", "application/json")
 
@@ -23,13 +27,13 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func GetPubIPHandler(w http.ResponseWriter, r *http.Request){
+  slog.Info("Receive call on Public IP handler")
   // Split address into ip and port
   ip, port, err := net.SplitHostPort(r.RemoteAddr)
 
   if err != nil {
     http.Error(w, "Can't get address.", http.StatusBadRequest)
-    fmt.Println("Error during address splitting", err.Error())
-    fmt.Println("RemoteAddr is: ", r.RemoteAddr)
+    slog.Error("Error during address splitting", "msg", err.Error())
     return
   }
   // Parse IP
@@ -37,8 +41,7 @@ func GetPubIPHandler(w http.ResponseWriter, r *http.Request){
   // need to check if userIP is nill
   if userIP == nil {
     http.Error(w, "Unsupported address format.", http.StatusBadRequest)
-    fmt.Println("Wrong address format")
-    fmt.Println("IP is: ", ip)
+    slog.Error("Wrong address format")
     return
   }
 
@@ -57,9 +60,14 @@ func GetPubIPHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func main() {
+  // Setup structured logger
+  jsonHandler := slog.NewJSONHandler(os.Stderr, nil)
+  logger := slog.New(jsonHandler)
+  slog.SetDefault(logger)
+
   http.HandleFunc("/ip", GetPubIPHandler)
   http.HandleFunc("/healthz", HealthCheckHandler)
 
-  fmt.Println("Server Running...")
+  slog.Info("Server is Running ...")
   http.ListenAndServe(":9090", nil)
 }
